@@ -105,13 +105,15 @@ def get_ecowitt():
 # 🌧️ FIX PIOGGIA (AGGIUNTO)
 # ======================
 def safe_rain(data):
-    rain = data.get("data", {}).get("rainfall", {})
+    d = data.get("data", {})
 
-    if not rain:
-        rain = data.get("data", {}).get("rain", {})
-
-    return rain
-
+    return (
+        d.get("rainfall_piezo") or
+        d.get("rain_piezo") or
+        d.get("rain") or
+        d.get("rainfall") or
+        {}
+    )
 
 # ======================
 # BUILD APRS PACKET
@@ -121,29 +123,34 @@ def build_packet(data):
     pressure = data.get("data", {}).get("pressure", {})
     wind = data.get("data", {}).get("wind", {})
 
+    # 🌡️ TEMPERATURA / UMIDITÀ / PRESSIONE
     temp = normalize_temp(outdoor)
     humidity = to_float(outdoor.get("humidity"))
     baro = normalize_pressure(pressure.get("relative"))
 
+    # 🌬️ VENTO
     wind_speed = to_float(wind.get("wind_speed"))
     wind_dir = to_float(wind.get("wind_direction"))
 
-    # 🌧️ AGGIUNTA PIOGGIA
-    rain = safe_rain(data)
+    # 🌧️ PIOGGIA (FIX REALE ECOwitt PIEZO)
+    rain = data.get("data", {}).get("rainfall_piezo", {})
 
     rain_1h = to_int(
+        rain.get("value") or
         rain.get("rain_rate") or
-        rain.get("hourly") or
         0
     )
 
+    # 📍 COORDINATE
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
+    # 🌡️ APRS richiede Fahrenheit
     temp_f = int((temp * 9/5) + 32)
 
     symbol = "_"
 
+    # 📡 PACKET APRS WX
     packet = (
         f"{CALLSIGN}>APRS,TCPIP*:"
         f"={lat}/{lon}{symbol}"
