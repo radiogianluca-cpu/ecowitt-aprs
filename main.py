@@ -116,22 +116,19 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # ✔ simbolo APRS corretto WX
-    symbol = "_/"
-
-    wx = (
-        f"{to_int(wind_dir):03d}/"
-        f"{to_int(wind_speed):03d}"
-        f"g000"
-        f"t{to_int(temp):02d}"
-        f"h{to_int(humidity):02d}"
-        f"b{int(baro * 10):05d}"
-    )
+# 🌤 METEO SYMBOL (stazione meteo APRS)
+    symbol_table = "_"
+    symbol_code = "/"
 
     packet = (
-        f"{CALLSIGN}>APRS:"
-        f"!{lat}/{lon}{symbol}"
-        f"{wx}"
+        f"{CALLSIGN}>APRS,TCPIP*:!"
+        f"{lat}/{lon}{symbol_table}{symbol_code}"
+        f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
+        f"g000"
+        f"t{to_int(temp):02d}"
+        f"r000p000"
+        f"h{to_int(humidity):02d}"
+        f"b{int(baro * 10):05d}"
     )
 
     return packet
