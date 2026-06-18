@@ -124,12 +124,13 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # 🌤 METEO SYMBOL (stazione meteo APRS)
-    symbol = "_/"
+# 🌤 METEO SYMBOL (stazione meteo APRS)
+    symbol_table = "_"
+    symbol_code = "/"
 
     packet = (
         f"{CALLSIGN}>APRS,TCPIP*:!"
-        f"{lat}/{lon}{symbol}"
+        f"{lat}/{lon}{symbol_table}{symbol_code}"
         f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
         f"g000"
         f"t{to_int(temp):02d}"
