@@ -121,24 +121,23 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # timestamp APRS (UTC)
-    from datetime import datetime
-    now = datetime.utcnow()
-    ts = now.strftime("%d%H%Mz")
+    # 🔥 FIX MANCANTE: conversione in Fahrenheit (OBBLIGATORIA APRS WX)
+    temp_f = int((temp * 9/5) + 32)
 
-    symbol = "_/"
+    # simbolo APRS WX
+    symbol = "_"
 
     packet = (
-    f"{CALLSIGN}>APRS,TCPIP*:"
-    f"={lat}/{lon}_"
-    f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
-    f"g000"
-    f"t{temp_f:03d}"
-    f"r000"
-    f"P000"
-    f"h{to_int(humidity):02d}"
-    f"b{int(baro * 10):05d}"
-)
+        f"{CALLSIGN}>APRS,TCPIP*:"
+        f"={lat}/{lon}{symbol}"
+        f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
+        f"g000"
+        f"t{temp_f:03d}"
+        f"r000"
+        f"P000"
+        f"h{to_int(humidity):02d}"
+        f"b{int(baro * 10):05d}"
+    )
 
     return packet
 
