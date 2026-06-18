@@ -23,7 +23,7 @@ MAC = os.getenv("ECOWITT_MAC")
 
 
 # ======================
-# CONVERSIONS SAFE
+# SAFE CONVERSION
 # ======================
 def to_float(x):
     try:
@@ -39,7 +39,34 @@ def to_int(x):
 
 
 # ======================
-# COORDS APRS
+# TEMP NORMALIZATION
+# ======================
+def normalize_temp(outdoor):
+    temp = outdoor.get("temperature") or outdoor.get("tempf")
+    temp = to_float(temp)
+
+    # Se arriva in Fahrenheit
+    if temp > 60:
+        temp = (temp - 32) * 5 / 9
+
+    return temp
+
+
+# ======================
+# PRESSURE NORMALIZATION
+# ======================
+def normalize_pressure(p):
+    p = to_float(p)
+
+    # Se arriva in inHg
+    if p < 900:
+        p = p * 33.8639
+
+    return p
+
+
+# ======================
+# APRS COORDS
 # ======================
 def to_lat(lat):
     hemi = "N" if lat >= 0 else "S"
@@ -58,7 +85,7 @@ def to_lon(lon):
 
 
 # ======================
-# FETCH ECO
+# FETCH ECOWITT
 # ======================
 def get_ecowitt():
     url = "https://api.ecowitt.net/api/v3/device/real_time"
@@ -70,13 +97,14 @@ def get_ecowitt():
         "call_back": "all"
     }
 
-    r = requests.get(url, params=params, timeout=10)
+    r = requests.get(url, params=params, timeout=15)
     r.raise_for_status()
+
     return r.json()
 
 
 # ======================
-# BUILD APRS WX PACKET (FIXED)
+# BUILD APRS PACKET
 # ======================
 def build_packet(data):
     outdoor = data.get("data", {}).get("outdoor", {})
@@ -93,7 +121,7 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-# 🌤 METEO SYMBOL (stazione meteo APRS)
+    # 🌤 Simbolo meteo APRS
     symbol_table = "_"
     symbol_code = "/"
 
@@ -117,37 +145,45 @@ def build_packet(data):
 def send_aprs(packet):
     s = socket.socket()
     s.settimeout(10)
+
     s.connect((APRS_SERVER, APRS_PORT))
 
-    login = f"user {CALLSIGN} pass {PASSCODE} vers ecowitt-aprs 1.0\n"
-    s.send(login.encode())
+    login = (
+        f"user {CALLSIGN} "
+        f"pass {PASSCODE} "
+        f"vers ecowitt-aprs 1.0\n"
+    )
 
+    s.send(login.encode())
     s.send((packet + "\n").encode())
+
     s.close()
 
 
 # ======================
-# ENDPOINT /run
+# ROOT
+# ======================
+@app.route("/")
+def home():
+    return "ECOWITT APRS OK - use /run"
+
+
+# ======================
+# SEND WX
 # ======================
 @app.route("/run")
 def run():
     try:
         data = get_ecowitt()
+
         packet = build_packet(data)
+
         send_aprs(packet)
 
         return f"OK -> {packet}"
 
     except Exception as e:
         return f"ERROR: {e}"
-
-
-# ======================
-# HOME (FIX 404)
-# ======================
-@app.route("/")
-def home():
-    return "ECOWITT APRS OK - use /run"
 
 
 # ======================
