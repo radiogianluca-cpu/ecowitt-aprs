@@ -83,7 +83,6 @@ def build_packet(data):
     pressure = data.get("data", {}).get("pressure", {})
     wind = data.get("data", {}).get("wind", {})
 
-    # WEATHER DATA
     temp = normalize_temp(outdoor)
     humidity = to_float(outdoor.get("humidity"))
     baro = normalize_pressure(pressure.get("relative"))
@@ -94,9 +93,13 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
+# 🌤 METEO SYMBOL (stazione meteo APRS)
+    symbol_table = "_"
+    symbol_code = "/"
+
     packet = (
         f"{CALLSIGN}>APRS,TCPIP*:!"
-        f"{lat}/{lon}_"
+        f"{lat}/{lon}{symbol_table}{symbol_code}"
         f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
         f"g000"
         f"t{to_int(temp):02d}"
