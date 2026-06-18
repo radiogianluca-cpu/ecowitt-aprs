@@ -96,14 +96,12 @@ def build_packet(data):
     packet = (
         f"{CALLSIGN}>APRS,TCPIP*:!"
         f"{lat}/{lon}_"
-        f"{int(wind_dir):03d}/{int(wind_speed):03d}"
-        f"g000"
-        f"t{int(temp_c):02d}"
-        f"r000p000"
-        f"h{int(humidity):02d}"
-        f"b{int(baro * 10) if baro else 0}"
+        f"{int(float(wind_dir)):03d}/{int(float(wind_speed)):03d}"
+        f"t{int(float(temp_c)):02d}"
+        f"h{int(float(humidity)):02d}"
+        f"b{int(float(baro) * 10) if baro else 0}"
     )
-
+    
     return packet
 
 
