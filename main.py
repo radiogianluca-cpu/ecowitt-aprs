@@ -178,15 +178,17 @@ def home():
 def run():
     try:
         data = get_ecowitt()
-
         packet = build_packet(data)
-
         send_aprs(packet)
 
-        return f"OK -> {packet}"
+        # DEBUG (non usare in produzione)
+        # return f"OK -> {packet}"
 
-    except Exception as e:
-        return f"ERROR: {e}"
+        # OUTPUT PER CRON-JOB (OBBLIGATORIO MINIMALE)
+        return "OK"
+
+    except Exception:
+        return "ERR"
 
 
 # ======================
