@@ -67,12 +67,12 @@ def build_packet(data):
     pressure = data.get("data", {}).get("pressure", {})
     wind = data.get("data", {}).get("wind", {})
 
-    temp_c = outdoor.get("temperature", 0)
-    humidity = outdoor.get("humidity", 0)
-    baro = pressure.get("relative", 0)
+    temp_c = outdoor.get("temperature", {}).get("value", 0)
+    humidity = outdoor.get("humidity", {}).get("value", 0)
+    baro = pressure.get("relative", {}).get("value", 0)
 
-    wind_speed = wind.get("wind_speed", 0)
-    wind_dir = wind.get("wind_direction", 0)
+    wind_speed = wind.get("wind_speed", {}).get("value", 0)
+    wind_dir = wind.get("wind_direction", {}).get("value", 0)
 
     lat = to_lat(LAT)
     lon = to_lon(LON)
