@@ -83,39 +83,26 @@ def build_packet(data):
     pressure = data.get("data", {}).get("pressure", {})
     wind = data.get("data", {}).get("wind", {})
 
-    temp = to_float(outdoor.get("temperature"))
+    # WEATHER DATA
+    temp = normalize_temp(outdoor)
     humidity = to_float(outdoor.get("humidity"))
-    baro = to_float(pressure.get("relative"))
+    baro = normalize_pressure(pressure.get("relative"))
+
     wind_speed = to_float(wind.get("wind_speed"))
     wind_dir = to_float(wind.get("wind_direction"))
-
-    # TEMP FIX °C
-    if temp > 60:
-        temp = (temp - 32) * 5 / 9
-
-    # PRESSURE FIX hPa
-    if baro < 900:
-        baro *= 3.38639
 
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # 🌤 WX SYMBOL CORRECT
-    symbol = "_/"
-
-    wx = (
-        f"{to_int(wind_dir):03d}/"
-        f"{to_int(wind_speed):03d}"
+    packet = (
+        f"{CALLSIGN}>APRS,TCPIP*:!"
+        f"{lat}/{lon}_"
+        f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
         f"g000"
         f"t{to_int(temp):02d}"
+        f"r000p000"
         f"h{to_int(humidity):02d}"
         f"b{int(baro * 10):05d}"
-    )
-
-    packet = (
-        f"{CALLSIGN}>APRS:"
-        f"!{lat}/{lon}{symbol}"
-        f"{wx}"
     )
 
     return packet
