@@ -3,7 +3,6 @@ import requests
 import socket
 import time
 import os
-from datetime import datetime
 
 app = Flask(__name__)
 
@@ -25,7 +24,7 @@ MAC = os.getenv("ECOWITT_MAC")
 
 
 # ======================
-# UTIL
+# UTILS
 # ======================
 def to_lat(lat):
     hemi = "N" if lat >= 0 else "S"
@@ -50,14 +49,9 @@ def to_float(x):
         return 0.0
 
 
-def normalize_temp(outdoor):
-    return to_float(outdoor.get("temperature"))
-
-
-def normalize_pressure(p):
-    return to_float(p)
-
-
+# ======================
+# ECOwitt FETCH
+# ======================
 def get_ecowitt():
     url = "https://api.ecowitt.net/api/v3/device/real_time"
 
@@ -73,64 +67,116 @@ def get_ecowitt():
 
 
 # ======================
-# PACKET BUILDER
+# SAFE GET (ANTI BREAK)
+# ======================
+def pick(*values):
+    for v in values:
+        try:
+            if v is None:
+                continue
+            return float(v)
+        except:
+            continue
+    return 0.0
+
+
+# ======================
+# PACKET BUILDER (IMMUNE)
 # ======================
 def build_packet(data):
-    outdoor = data.get("data", {}).get("outdoor", {})
-    pressure = data.get("data", {}).get("pressure", {})
-    wind = data.get("data", {}).get("wind", {})
-    rain_data = data.get("data", {})
 
-    # 🌡 temp / humidity / pressure
-    temp = normalize_temp(outdoor)
-    humidity = to_float(outdoor.get("humidity"))
-    baro = normalize_pressure(pressure.get("relative"))
+    d = data.get("data", data)
 
-    # 🌬 wind
-    wind_speed = to_float(wind.get("wind_speed"))
-    wind_dir = to_float(wind.get("wind_direction"))
-
-    # 🌧 RAIN (PIEZO SAFE)
-    rain = (
-        rain_data.get("rainfall", {}) or
-        rain_data.get("rain", {}) or
-        rain_data.get("rain_piezo", {}) or
-        {}
+    # ----------------------
+    # 🌡 OUTDOOR
+    # ----------------------
+    outdoor = (
+        d.get("outdoor") or
+        d.get("wh65") or
+        d.get("wh40") or
+        d.get("piezo") or
+        d
     )
 
-    rain_1h = int(to_float(
-        rain.get("rain_rate") or
-        rain.get("hourly") or
-        rain.get("hourlyRain") or
-        0
+    temp = pick(
+        outdoor.get("temperature"),
+        outdoor.get("temp"),
+        d.get("temperature")
+    )
+
+    humidity = pick(
+        outdoor.get("humidity"),
+        d.get("humidity")
+    )
+
+    # ----------------------
+    # 🌬 WIND
+    # ----------------------
+    wind = d.get("wind") or d
+
+    wind_speed = pick(
+        wind.get("wind_speed"),
+        wind.get("speed"),
+        d.get("wind_speed")
+    )
+
+    wind_dir = pick(
+        wind.get("wind_direction"),
+        wind.get("dir"),
+        d.get("wind_direction")
+    )
+
+    # ----------------------
+    # 🌡 PRESSURE
+    # ----------------------
+    pressure = d.get("pressure") or d
+
+    baro = pick(
+        pressure.get("relative"),
+        pressure.get("pressure"),
+        d.get("pressure")
+    )
+
+    # ----------------------
+    # 🌧 RAIN (PIEZO SAFE)
+    # ----------------------
+    rain = (
+        d.get("rainfall") or
+        d.get("rain") or
+        d.get("rain_piezo") or
+        d
+    )
+
+    rain_1h = int(pick(
+        rain.get("rain_rate"),
+        rain.get("hourly"),
+        rain.get("last_hour")
     ))
 
-    rain_24h = int(to_float(
-        rain.get("daily") or
-        rain.get("dailyRain") or
-        rain.get("24h") or
-        0
+    rain_24h = int(pick(
+        rain.get("daily"),
+        rain.get("dailyRain")
     ))
 
-    rain_midnight = int(to_float(
-        rain.get("event") or
-        rain.get("midnight") or
-        rain.get("total") or
-        0
+    rain_midnight = int(pick(
+        rain.get("event"),
+        rain.get("midnight")
     ))
 
-    # APRS format values
+    # ----------------------
+    # 📍 COORDINATE
+    # ----------------------
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
     temp_f = int((temp * 9/5) + 32)
 
-    # ======================
-    # APRS WX PACKET
-    # ======================
+    # ----------------------
+    # 📡 APRS WX PACKET
+    # ----------------------
     packet = (
-        f"{CALLSIGN}>APRS,TCPIP*:"
-        f"={lat}/{lon}_"
+        f"{CALLSIGN}>APRS,TCPIP*:="
+        f"{lat}/{lon}_"
         f"{int(wind_dir):03d}/{int(wind_speed):03d}"
         f"g000"
         f"t{temp_f:03d}"
@@ -160,7 +206,7 @@ def send_aprs(packet):
 
 
 # ======================
-# ENDPOINTS
+# ENDPOINT
 # ======================
 @app.route("/")
 def home():
@@ -173,10 +219,7 @@ def run():
         data = get_ecowitt()
         packet = build_packet(data)
         send_aprs(packet)
-
-        # IMPORTANT: output minimal per cron-job.org
         return "OK"
-
     except Exception:
         return "ERR"
 
