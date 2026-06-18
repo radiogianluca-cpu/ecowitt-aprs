@@ -200,6 +200,30 @@ def run():
         return "OK"
     except Exception:
         return "ERR"
+        
+# ======================
+# SEND WX
+# ======================
+@app.route("/debug")
+def debug():
+    try:
+        data = get_ecowitt()
+
+        # estrai solo la parte utile
+        d = data.get("data", {})
+
+        return {
+            "keys_top_level": list(d.keys()),
+            "outdoor": d.get("outdoor"),
+            "wind": d.get("wind"),
+            "pressure": d.get("pressure"),
+            "rainfall": d.get("rainfall"),
+            "rain": d.get("rain"),
+            "rain_piezo": d.get("rain_piezo")
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 if __name__ == "__main__":
