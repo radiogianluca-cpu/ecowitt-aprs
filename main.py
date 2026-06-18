@@ -1,6 +1,9 @@
+from flask import Flask
 import requests
 import socket
 import os
+
+app = Flask(__name__)
 
 # ======================
 # CONFIG
@@ -36,7 +39,7 @@ def to_int(x):
 
 
 # ======================
-# TEMP NORMALIZATION
+# TEMP FIX
 # ======================
 def normalize_temp(outdoor):
     temp = outdoor.get("temperature") or outdoor.get("tempf")
@@ -49,14 +52,12 @@ def normalize_temp(outdoor):
 
 
 # ======================
-# PRESSURE
+# PRESSURE FIX
 # ======================
 def normalize_pressure(p):
     p = to_float(p)
-
     if p < 900:
         p = p * 3.38639
-
     return p
 
 
@@ -80,7 +81,7 @@ def to_lon(lon):
 
 
 # ======================
-# FETCH DATA
+# FETCH ECO
 # ======================
 def get_ecowitt():
     url = "https://api.ecowitt.net/api/v3/device/real_time"
@@ -98,7 +99,7 @@ def get_ecowitt():
 
 
 # ======================
-# BUILD PACKET
+# PACKET
 # ======================
 def build_packet(data):
     outdoor = data.get("data", {}).get("outdoor", {})
@@ -118,7 +119,7 @@ def build_packet(data):
     symbol_table = "_"
     symbol_code = "/"
 
-    packet = (
+    return (
         f"{CALLSIGN}>APRS,TCPIP*:!"
         f"{lat}/{lon}{symbol_table}{symbol_code}"
         f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
@@ -128,8 +129,6 @@ def build_packet(data):
         f"h{to_int(humidity):02d}"
         f"b{int(baro * 10):05d}"
     )
-
-    return packet
 
 
 # ======================
@@ -148,19 +147,23 @@ def send_aprs(packet):
 
 
 # ======================
-# MAIN (CRON ENTRYPOINT)
+# ENDPOINT (CRON)
 # ======================
-def main():
+@app.route("/run")
+def run():
     try:
         data = get_ecowitt()
         packet = build_packet(data)
         send_aprs(packet)
 
-        print("OK ->", packet)
+        return f"OK -> {packet}"
 
     except Exception as e:
-        print("ERROR:", e)
+        return f"ERROR: {e}"
 
 
+# ======================
+# START
+# ======================
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=10000)
