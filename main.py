@@ -1,7 +1,6 @@
 import requests
 import socket
 import os
-import time
 
 # ======================
 # CONFIG
@@ -37,7 +36,7 @@ def to_int(x):
 
 
 # ======================
-# TEMP (°C / °F AUTO)
+# TEMP NORMALIZATION
 # ======================
 def normalize_temp(outdoor):
     temp = outdoor.get("temperature") or outdoor.get("tempf")
@@ -50,7 +49,7 @@ def normalize_temp(outdoor):
 
 
 # ======================
-# PRESSURE NORMALIZATION
+# PRESSURE
 # ======================
 def normalize_pressure(p):
     p = to_float(p)
@@ -62,7 +61,7 @@ def normalize_pressure(p):
 
 
 # ======================
-# COORDS APRS
+# COORDS
 # ======================
 def to_lat(lat):
     hemi = "N" if lat >= 0 else "S"
@@ -81,7 +80,7 @@ def to_lon(lon):
 
 
 # ======================
-# FETCH ECOwitt
+# FETCH DATA
 # ======================
 def get_ecowitt():
     url = "https://api.ecowitt.net/api/v3/device/real_time"
@@ -99,7 +98,7 @@ def get_ecowitt():
 
 
 # ======================
-# BUILD APRS PACKET
+# BUILD PACKET
 # ======================
 def build_packet(data):
     outdoor = data.get("data", {}).get("outdoor", {})
@@ -116,7 +115,6 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # 🌤 METEO SYMBOL APRS
     symbol_table = "_"
     symbol_code = "/"
 
@@ -140,20 +138,17 @@ def build_packet(data):
 def send_aprs(packet):
     s = socket.socket()
     s.settimeout(10)
-
     s.connect((APRS_SERVER, APRS_PORT))
 
     login = f"user {CALLSIGN} pass {PASSCODE} vers ecowitt-aprs 1.0\n"
     s.send(login.encode())
 
-    time.sleep(2)
     s.send((packet + "\n").encode())
-
     s.close()
 
 
 # ======================
-# MAIN (CRON EXECUTION)
+# MAIN (CRON ENTRYPOINT)
 # ======================
 def main():
     try:
