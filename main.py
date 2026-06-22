@@ -8,8 +8,8 @@ app = Flask(__name__)
 # ======================
 # CONFIG
 # ======================
-CALLSIGN = "IU0VXM-13"
-PASSCODE = "21164"
+CALLSIGN = os.getenv("CALLSIGN")
+PASSCODE = os.getenv("APRS_PASSCODE")
 
 APRS_SERVER = "rotate.aprs2.net"
 APRS_PORT = 14580
