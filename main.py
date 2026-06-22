@@ -226,7 +226,7 @@ def debug():
             "pressure": d.get("pressure"),
             "rainfall": d.get("rainfall"),
             "rain": d.get("rain"),
-            "rain_piezo": d.get("rain_piezo")
+            "rain_piezo": d.get("rain_piezo"),
             "rainfall_piezo": d.get("rainfall_piezo"),
         }
 
