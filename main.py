@@ -136,10 +136,7 @@ def build_packet(data):
     # 🌧️ PIOGGIA
     rain = data.get("data", {}).get("rainfall_piezo", {})
 
-    # APRS richiede centesimi di pollice
     rain_1h = int(to_float(rain.get("1_hour")) * 100)
-
-    # opzionale: pioggia ultime 24h
     rain_24h = int(to_float(rain.get("24_hours")) * 100)
 
     # 📍 COORDINATE
@@ -158,7 +155,7 @@ def build_packet(data):
         f"g{to_int(wind_gust):03d}"
         f"t{temp_f:03d}"
         f"r{rain_1h:03d}"
-        f"P{rain_24h:03d}"
+        f"p{rain_24h:03d}"   # 👈 IMPORTANTE: minuscola
         f"h{to_int(humidity):02d}"
         f"b{int(baro * 10):05d}"
     )
