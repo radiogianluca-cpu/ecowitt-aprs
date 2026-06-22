@@ -151,17 +151,17 @@ def build_packet(data):
 
     symbol = "_"
 
-packet = (
-    f"{CALLSIGN}>APRS,TCPIP*:"
-    f"={lat}/{lon}{symbol}"
-    f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
-    f"g{to_int(wind_gust):03d}"
-    f"t{temp_f:03d}"
-    f"r{rain_1h:03d}"
-    f"P{rain_24h:03d}"
-    f"h{to_int(humidity):02d}"
-    f"b{int(baro * 10):05d}"
-)
+    packet = (
+        f"{CALLSIGN}>APRS,TCPIP*:"
+        f"={lat}/{lon}{symbol}"
+        f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
+        f"g{to_int(wind_gust):03d}"
+        f"t{temp_f:03d}"
+        f"r{rain_1h:03d}"
+        f"P{rain_24h:03d}"
+        f"h{to_int(humidity):02d}"
+        f"b{int(baro * 10):05d}"
+    )
 
     return packet
 
