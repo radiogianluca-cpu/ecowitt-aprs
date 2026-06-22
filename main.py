@@ -131,6 +131,7 @@ def build_packet(data):
     # 🌬️ VENTO
     wind_speed = to_float(wind.get("wind_speed"))
     wind_dir = to_float(wind.get("wind_direction"))
+    wind_gust = to_float(wind.get("wind_gust"))
 
     # 🌧️ PIOGGIA (FIX REALE ECOwitt PIEZO)
     rain = data.get("data", {}).get("rainfall_piezo", {})
@@ -158,7 +159,7 @@ def build_packet(data):
         f"g000"
         f"t{temp_f:03d}"
         f"r{rain_1h:03d}"
-        f"P000"
+        f"g{to_int(wind_gust):03d}"
         f"h{to_int(humidity):02d}"
         f"b{int(baro * 10):05d}"
     )
