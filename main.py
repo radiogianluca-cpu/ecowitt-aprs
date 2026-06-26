@@ -118,15 +118,22 @@ def safe_rain(data):
 
 
 # ======================
-# BUILD APRS PACKET
+# BUILD APRS PACKET (OTTIMIZZATO SENZA DOPPIA CONVERSIONE)
 # ======================
 def build_packet(data):
     outdoor = data.get("data", {}).get("outdoor", {})
     pressure = data.get("data", {}).get("pressure", {})
     wind = data.get("data", {}).get("wind", {})
 
-    # 🌡️ TEMPERATURA / UMIDITÀ / PRESSIONE
-    temp = normalize_temp(outdoor)
+    # 🌡️ PRENDIAMO IL VALORE FAHRENHEIT DIRETTO PER EVITARE SCARTI
+    raw_temp = to_float(outdoor.get("temperature") or outdoor.get("tempf"))
+    
+    # Se per qualche motivo il dato Ecowitt fosse in Celsius (es. sotto i 60), lo converte, altrimenti usa il nativo
+    if raw_temp < 60: 
+        temp_f = round((raw_temp * 9 / 5) + 32)
+    else:
+        temp_f = round(raw_temp)
+
     humidity = to_float(outdoor.get("humidity"))
     baro = normalize_pressure(pressure.get("relative"))
 
@@ -145,9 +152,6 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # 🌡️ ARROTONDAMENTO CORRETTO: round() risolve la differenza di 0.5°C
-    temp_f = round((temp * 9 / 5) + 32)
-
     symbol = "_"
 
     packet = (
@@ -155,7 +159,7 @@ def build_packet(data):
         f"={lat}/{lon}{symbol}"
         f"{round(wind_dir):03d}/{round(wind_speed):03d}"
         f"g{round(wind_gust):03d}"
-        f"t{temp_f:03d}"
+        f"t{temp_f:03d}" # Invierà esattamente l'arrotondamento del valore nativo Ecowitt
         f"r{rain_1h:03d}"
         f"p{rain_24h:03d}"
         f"h{round(humidity):02d}"
@@ -163,7 +167,6 @@ def build_packet(data):
     )
 
     return packet
-
 
 # ======================
 # SEND APRS
