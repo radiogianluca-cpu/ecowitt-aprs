@@ -6,16 +6,17 @@ import os
 app = Flask(__name__)
 
 # ======================
-# CONFIG
+# CONFIG (Lettura variabili ambiente)
 # ======================
 CALLSIGN = os.getenv("CALLSIGN")
 PASSCODE = os.getenv("APRS_PASSCODE")
 
+# Modificato: Legge da Render e converte in float. Se non esistono, usa i default di prima.
+LAT = float(os.getenv("LAT", 0.0))
+LON = float(os.getenv("LON", 0.0))
+
 APRS_SERVER = "rotate.aprs2.net"
 APRS_PORT = 14580
-
-LAT = 41.97917
-LON = 12.04167
 
 APP_KEY = os.getenv("ECOWITT_APP_KEY")
 API_KEY = os.getenv("ECOWITT_API_KEY")
@@ -86,7 +87,7 @@ def to_lon(lon):
 # FETCH ECOWITT
 # ======================
 def get_ecowitt():
-    url = "https://api.ecowitt.net/api/v3/device/real_time"
+    url = "https://ecowitt.net"
 
     params = {
         "application_key": APP_KEY,
@@ -102,7 +103,7 @@ def get_ecowitt():
 
 
 # ======================
-# 🌧️ FIX PIOGGIA (AGGIUNTO)
+# 🌧️ FIX PIOGGIA
 # ======================
 def safe_rain(data):
     d = data.get("data", {})
@@ -115,9 +116,7 @@ def safe_rain(data):
         {}
     )
 
-# ======================
-# BUILD APRS PACKET
-# ======================
+
 # ======================
 # BUILD APRS PACKET
 # ======================
@@ -142,28 +141,29 @@ def build_packet(data):
     rain_1h = int(to_float(rain.get("1_hour")) * 100)
     rain_24h = int(to_float(rain.get("24_hours")) * 100)
 
-    # 📍 COORDINATE
+    # 📍 COORDINATE (Generate dalle variabili float)
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # 🌡️ MODIFICATO: Usiamo round() invece di int() per evitare la perdita di 0.5°C
-    temp_f = round((temp * 9/5) + 32)
+    # 🌡️ CORRETTO: Usiamo round() per evitare lo scarto di 0.5°C
+    temp_f = round((temp * 9 / 5) + 32)
 
     symbol = "_"
 
     packet = (
         f"{CALLSIGN}>APRS,TCPIP*:"
         f"={lat}/{lon}{symbol}"
-        f"{round(wind_dir):03d}/{round(wind_speed):03d}" # Usato round per precisione
+        f"{round(wind_dir):03d}/{round(wind_speed):03d}"
         f"g{round(wind_gust):03d}"
         f"t{temp_f:03d}"
         f"r{rain_1h:03d}"
-        f"p{rain_24h:03d}"   
-        f"h{round(humidity):02d}"                         # Usato round per precisione
-        f"b{round(baro * 10):05d}"                        # Usato round per precisione
+        f"p{rain_24h:03d}"
+        f"h{round(humidity):02d}"
+        f"b{round(baro * 10):05d}"
     )
 
     return packet
+
 
 # ======================
 # SEND APRS
@@ -174,11 +174,7 @@ def send_aprs(packet):
 
     s.connect((APRS_SERVER, APRS_PORT))
 
-    login = (
-        f"user {CALLSIGN} "
-        f"pass {PASSCODE} "
-        f"vers ecowitt-aprs 1.0\n"
-    )
+    login = f"user {CALLSIGN} pass {PASSCODE} vers ecowitt-aprs 1.0\n"
 
     s.send(login.encode())
     s.send((packet + "\n").encode())
@@ -206,16 +202,15 @@ def run():
         return "OK"
     except Exception:
         return "ERR"
-        
+
+
 # ======================
-# SEND WX
+# DEBUG
 # ======================
 @app.route("/debug")
 def debug():
     try:
         data = get_ecowitt()
-
-        # estrai solo la parte utile
         d = data.get("data", {})
 
         return {
@@ -227,6 +222,7 @@ def debug():
             "rain": d.get("rain"),
             "rain_piezo": d.get("rain_piezo"),
             "rainfall_piezo": d.get("rainfall_piezo"),
+            "config_coords": {"lat": LAT, "lon": LON},  # Aggiunto per controllo visivo
         }
 
     except Exception as e:
