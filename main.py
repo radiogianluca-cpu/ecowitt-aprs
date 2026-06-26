@@ -118,6 +118,9 @@ def safe_rain(data):
 # ======================
 # BUILD APRS PACKET
 # ======================
+# ======================
+# BUILD APRS PACKET
+# ======================
 def build_packet(data):
     outdoor = data.get("data", {}).get("outdoor", {})
     pressure = data.get("data", {}).get("pressure", {})
@@ -143,21 +146,21 @@ def build_packet(data):
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # 🌡️ APRS richiede Fahrenheit
-    temp_f = int((temp * 9/5) + 32)
+    # 🌡️ MODIFICATO: Usiamo round() invece di int() per evitare la perdita di 0.5°C
+    temp_f = round((temp * 9/5) + 32)
 
     symbol = "_"
 
     packet = (
         f"{CALLSIGN}>APRS,TCPIP*:"
         f"={lat}/{lon}{symbol}"
-        f"{to_int(wind_dir):03d}/{to_int(wind_speed):03d}"
-        f"g{to_int(wind_gust):03d}"
+        f"{round(wind_dir):03d}/{round(wind_speed):03d}" # Usato round per precisione
+        f"g{round(wind_gust):03d}"
         f"t{temp_f:03d}"
         f"r{rain_1h:03d}"
-        f"p{rain_24h:03d}"   # 👈 IMPORTANTE: minuscola
-        f"h{to_int(humidity):02d}"
-        f"b{int(baro * 10):05d}"
+        f"p{rain_24h:03d}"   
+        f"h{round(humidity):02d}"                         # Usato round per precisione
+        f"b{round(baro * 10):05d}"                        # Usato round per precisione
     )
 
     return packet
