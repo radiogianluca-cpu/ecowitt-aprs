@@ -11,7 +11,6 @@ app = Flask(__name__)
 CALLSIGN = os.getenv("CALLSIGN")
 PASSCODE = os.getenv("APRS_PASSCODE")
 
-# Modificato: Legge da Render e converte in float. Se non esistono, usa i default di prima.
 LAT = float(os.getenv("LAT", 0.0))
 LON = float(os.getenv("LON", 0.0))
 
@@ -87,8 +86,8 @@ def to_lon(lon):
 # FETCH ECOWITT
 # ======================
 def get_ecowitt():
-    # CORRETTO: Inserito l'endpoint API v3 completo e senza underscore
-    url = "https://ecowitt.net"
+    # RIPRISTINATO: L'URL originale corretto che usavi prima
+    url = "https://api.ecowitt.net/api/v3/device/real_time"
 
     params = {
         "application_key": APP_KEY,
@@ -142,11 +141,11 @@ def build_packet(data):
     rain_1h = int(to_float(rain.get("1_hour")) * 100)
     rain_24h = int(to_float(rain.get("24_hours")) * 100)
 
-    # 📍 COORDINATE (Generate dalle variabili float)
+    # 📍 COORDINATE
     lat = to_lat(LAT)
     lon = to_lon(LON)
 
-    # 🌡️ CORRETTO: Usiamo round() per evitare lo scarto di 0.5°C
+    # 🌡️ ARROTONDAMENTO CORRETTO: round() risolve la differenza di 0.5°C
     temp_f = round((temp * 9 / 5) + 32)
 
     symbol = "_"
@@ -223,20 +222,20 @@ def debug():
             "rain": d.get("rain"),
             "rain_piezo": d.get("rain_piezo"),
             "rainfall_piezo": d.get("rainfall_piezo"),
-            "config_coords": {"lat": LAT, "lon": LON},  # Aggiunto per controllo visivo
+            "config_coords": {"lat": LAT, "lon": LON},
         }
 
     except Exception as e:
         return {"error": str(e)}
 
 # ======================
-# DEBUG ISOLATO (NUOVO)
+# DEBUG ISOLATO (CORRETTO)
 # ======================
 @app.route("/debug-test")
 def debug_test():
     try:
-        # CORRETTO: Inserito l'endpoint API v3 completo e senza underscore
-        url = "https://ecowitt.net"
+        # RIPRISTINATO: URL originale corretto anche qui
+        url = "https://api.ecowitt.net/api/v3/device/real_time"
         params = {
             "application_key": APP_KEY,
             "api_key": API_KEY,
@@ -246,7 +245,6 @@ def debug_test():
         
         r = requests.get(url, params=params, timeout=15)
         
-        # Tentiamo di estrarre il testo grezzo se il JSON fallisce
         try:
             json_data = r.json()
             return {
@@ -258,7 +256,7 @@ def debug_test():
             return {
                 "RISPOSTA_CORRETTA_JSON": False,
                 "HTTP_STATUS": r.status_code,
-                "TESTO_GREZZO_SERVER": r.text[:500], # Mostra le prime 500 lettere della risposta
+                "TESTO_GREZZO_SERVER": r.text[:500],
                 "CHIAVI_CARICATE": {
                     "HAS_APP_KEY": bool(APP_KEY),
                     "HAS_API_KEY": bool(API_KEY),
