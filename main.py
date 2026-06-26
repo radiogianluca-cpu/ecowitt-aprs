@@ -228,6 +228,45 @@ def debug():
     except Exception as e:
         return {"error": str(e)}
 
+# ======================
+# DEBUG ISOLATO (NUOVO)
+# ======================
+@app.route("/debug-test")
+def debug_test():
+    try:
+        url = "https://ecowitt.net"
+        params = {
+            "application_key": APP_KEY,
+            "api_key": API_KEY,
+            "mac": MAC,
+            "call_back": "all"
+        }
+        
+        r = requests.get(url, params=params, timeout=15)
+        
+        # Tentiamo di estrarre il testo grezzo se il JSON fallisce
+        try:
+            json_data = r.json()
+            return {
+                "RISPOSTA_CORRETTA_JSON": True,
+                "HTTP_STATUS": r.status_code,
+                "DATA": json_data
+            }
+        except Exception:
+            return {
+                "RISPOSTA_CORRETTA_JSON": False,
+                "HTTP_STATUS": r.status_code,
+                "TESTO_GREZZO_SERVER": r.text[:500], # Mostra le prime 500 lettere della risposta
+                "CHIAVI_CARICATE": {
+                    "HAS_APP_KEY": bool(APP_KEY),
+                    "HAS_API_KEY": bool(API_KEY),
+                    "HAS_MAC": bool(MAC)
+                }
+            }
+
+    except Exception as e:
+        return {"errore_di_connessione": str(e)}
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
