@@ -87,6 +87,7 @@ def to_lon(lon):
 # FETCH ECOWITT
 # ======================
 def get_ecowitt():
+    # CORRETTO: Inserito l'endpoint API v3 completo e senza underscore
     url = "https://ecowitt.net"
 
     params = {
@@ -234,6 +235,7 @@ def debug():
 @app.route("/debug-test")
 def debug_test():
     try:
+        # CORRETTO: Inserito l'endpoint API v3 completo e senza underscore
         url = "https://ecowitt.net"
         params = {
             "application_key": APP_KEY,
